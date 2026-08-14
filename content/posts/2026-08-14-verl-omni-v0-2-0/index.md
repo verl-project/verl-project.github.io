@@ -9,8 +9,8 @@ authors:
   - "Jingan Zhou"
   - "Yingshu Chen"
   - "Ziyang Hong"
-summary: "VeRL-Omni v0.2.0 improves diffusion RL throughput with request-level batching and V1 trainer support, and stabilizes omni training with reusable adapters, FSDP2, and vLLM-Omni rollout."
-image: "verl_omni_v0_2_0_blog_overview.png"
+summary: "Faster diffusion RL and stable omni training in VeRL-Omni v0.2.0."
+image: "cover.png"
 tags:
   - release
   - performance
