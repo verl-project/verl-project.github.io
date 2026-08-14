@@ -9,7 +9,7 @@ authors:
   - "Jingan Zhou"
   - "Yingshu Chen"
   - "Ziyang Hong"
-summary: "Faster diffusion RL and stable omni training in VeRL-Omni v0.2.0."
+summary: "A release focused on higher-throughput diffusion rollout, reusable omni adapters, and broader recipe coverage."
 image: "cover.png"
 tags:
   - release
@@ -31,7 +31,7 @@ coverage, and documentation, with two changes carrying the most impact:
 - Stable omni training, built around the omni V1 trainer, reusable model
   adapters, FSDP2, and vLLM-Omni rollout.
 
-{{< figure src="verl_omni_v0_2_0_blog_overview.png" alt="VeRL-Omni v0.2.0 release overview" caption="VeRL-Omni v0.2.0 release overview" width="60%" >}}
+{{< figure src="verl_omni_v0_2_0_blog_overview.png" alt="VeRL-Omni v0.2.0 release overview" caption="VeRL-Omni v0.2.0 release overview" width="90%" >}}
 
 ## 1. Faster Diffusion RL
 
