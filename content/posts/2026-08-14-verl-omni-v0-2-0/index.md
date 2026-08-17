@@ -312,30 +312,12 @@ The release also expands the broader VeRL-Omni model and algorithm surface:
 Outside the model-algorithm matrix, `v0.2.0` also adds Ascend NPU Dockerfiles
 and install guidance.
 
-## Looking Ahead
+## Future Plan
 
-The road after `v0.2.0` is fairly clear.
-
-For diffusion RL, the next step is to keep moving from "works end-to-end" to
-"measurably efficient and diagnosable". The repository now has the features for
-this: batching modes, profiling recipes, and rollout-correction paths. Future
-benchmark suites should separate rollout, log-prob computation, reward scoring,
-weight sync, and actor update costs.
-
-For omni model training, the adapter design should become a reusable
-model-integration pattern. It points toward more omni models with
-stage-specific training, for example, minicpm-o.
-
-Correctness signals should keep getting tighter. For both diffusion and omni
-training, high throughput is only useful when log-probs, rollout trajectories,
-actor weights, and reward signals remain aligned. Metrics such as
-actor-rollout Pearson correlation, log-prob consistency, precision dumps, and
-step-level timing should become standard parts of every serious recipe.
-
-Reproducibility should also become a first-class release goal. Future recipes
-should make it easier to rerun the same setup with pinned model versions, fixed
-data preprocessing, explicit seeds, stable configuration overrides, and
-published reference metrics. For long-running RL jobs, reproducibility is not
-only about getting the same final score; it is about making reward curves,
-timing breakdowns, memory usage, and validation outputs comparable across
-machines and releases.
+- Optimize omni-modal models via fully async training.
+- Extend new models and algorithms, such as MiniMax-H3, MiniCPM-o models, and
+  OPD/M-OPD trainers.
+- Make video diffusion model training more efficient via batching, TQ, and the
+  V1 trainer.
+- Harden diffusion and omni-modal rollout code for async training.
+- Support agentic RL with multi-stage and multi-turn generation.
