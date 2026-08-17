@@ -103,11 +103,11 @@ and
 
 In the charts below, the blue curve is `v0.1` and the green curve is `v0.2`.
 
-{{< figure src="qwen-image-gpu-utilization.svg" alt="Qwen-Image FlowGRPO GPU utilization" caption="GPU utilization rises after request-level packing." >}}
+{{< figure src="qwen-image-gpu-utilization.svg" alt="Qwen-Image FlowGRPO GPU utilization" caption="GPU utilization rises after request-level packing. Blue: v0.1; green: v0.2." >}}
 
-{{< figure src="qwen-image-timing-gen.svg" alt="Qwen-Image FlowGRPO generation time" caption="Generation time drops from the v0.1 path to the v0.2 path." >}}
+{{< figure src="qwen-image-timing-gen.svg" alt="Qwen-Image FlowGRPO generation time" caption="Generation time drops from the v0.1 path to the v0.2 path. Blue: v0.1; green: v0.2." >}}
 
-{{< figure src="qwen-image-timing-step.svg" alt="Qwen-Image FlowGRPO step time" caption="Step time follows the same trend." >}}
+{{< figure src="qwen-image-timing-step.svg" alt="Qwen-Image FlowGRPO step time" caption="Step time follows the same trend. Blue: v0.1; green: v0.2." >}}
 
 The production-style Qwen-Image FlowGRPO recipes enable request-level batching by
 default. The main entry points are `run_qwen_image_ocr_lora.sh` for the
@@ -128,22 +128,6 @@ lighter request-level memory shape and can use `max_num_seqs=256`.
 The recipe-level step-time numbers line up with that story: the baseline
 Qwen-Image FlowGRPO LoRA run is about `420s` per step on 4 × H800, while the
 async reward variant reaches about `360s` per step on 5 GPUs.
-
-SD3.5 FlowGRPO shows the trainer side of the same release. The repository
-includes `run_sd35_medium_ocr_lora_v1.sh` for the V1 trainer in sync mode and
-`run_sd35_medium_ocr_lora_v1_separate_async.sh` for V1 `separate_async`
-rollout. In the current benchmark, v0 and v1 (sync mode) are roughly tied on step time,
-but the V1 run has a cleaner stability story as reward rises through training.
-Reference runs:
-[SD3.5 Medium OCR LoRA v0 trainer](https://wandb.ai/mikecheung/flow_grpo/runs/9ylk6e5f)
-and
-[SD3.5 Medium OCR LoRA v1 trainer](https://wandb.ai/mikecheung/flow_grpo/runs/h04p15jr).
-
-{{< figure src="sd3.5-m-timing-step.svg" alt="SD3.5 FlowGRPO v0 versus v1 step time" caption="SD3.5 v0 and V1 trainer step time are currently close." >}}
-
-{{< figure src="sd3.5-m-training-rewards.svg" alt="SD3.5 FlowGRPO v0 versus v1 training rewards" caption="Training rewards rise steadily on the V1 path." >}}
-
-{{< figure src="sd3.5-m-val-rewards.svg" alt="SD3.5 FlowGRPO v0 versus v1 validation rewards" caption="Validation rewards track the same stability story." >}}
 
 ## 2. Stable Omni Training
 
@@ -240,7 +224,7 @@ just a model-specific launch path. It is a V1 trainer recipe with a reusable
 omni adapter, multimodal data handling, actor-rollout consistency metrics, and
 a documented image-to-text benchmark.
 
-## Briefly: Other Updates
+## Model and Algorithm Extensions
 
 The release also expands the broader VeRL-Omni model and algorithm surface:
 
