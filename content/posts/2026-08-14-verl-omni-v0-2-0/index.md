@@ -70,15 +70,48 @@ explains both diffusion batching modes, how to enable them, and when to choose
 each mode. Current faster diffusion RL support is organized around these
 recipes:
 
-| Model | Algorithm | Script | Acceleration / support | W&B run |
-|---|---|---|---|---|
-| Qwen-Image | FlowGRPO LoRA | [`run_qwen_image_ocr_lora.sh`](https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/qwen_image/run_qwen_image_ocr_lora.sh) | request-level batching | [v0.2.0 runs](https://wandb.ai/mikecheung/flow_grpo/runs/1vsrnhbd) |
-| Qwen-Image | FlowGRPO LoRA | [`run_qwen_image_ocr_lora_async_reward.sh`](https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/qwen_image/run_qwen_image_ocr_lora_async_reward.sh) | request-level batching, async reward | - |
-| Qwen-Image | FlowGRPO LoRA | [`run_qwen_image_ocr_lora_rollout_corr.sh`](https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/qwen_image/run_qwen_image_ocr_lora_rollout_corr.sh) | request-level batching, rollout correction bypass | - |
-| Qwen-Image | FlowGRPO full model | [`run_qwen_image_ocr.sh`](https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/qwen_image/run_qwen_image_ocr.sh) | step-wise continuous batching, full-model training | [full model](https://wandb.ai/andyzhou/VeRL-Omni-demo/runs/8p8y9olb) |
-| SD3.5 Medium | FlowGRPO LoRA | [`run_sd35_medium_ocr_lora.sh`](https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/sd35/run_sd35_medium_ocr_lora.sh) | request-level batching | [v0 trainer](https://wandb.ai/mikecheung/flow_grpo/runs/9ylk6e5f) |
-| SD3.5 Medium | FlowGRPO LoRA, V1 trainer | [`run_sd35_medium_ocr_lora_v1.sh`](https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/sd35/run_sd35_medium_ocr_lora_v1.sh) | V1 trainer sync mode | [v1 trainer](https://wandb.ai/mikecheung/flow_grpo/runs/h04p15jr) |
-| SD3.5 Medium | FlowGRPO LoRA, V1 trainer | [`run_sd35_medium_ocr_lora_v1_separate_async.sh`](https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/sd35/run_sd35_medium_ocr_lora_v1_separate_async.sh) | V1 trainer `separate_async`, dedicated rollout workers | [v1 trainer](https://api.wandb.ai/links/didan/kk5uxbmh) |
+<table>
+  <colgroup>
+    <col style="width: 40%;">
+    <col style="width: 36%;">
+    <col style="width: 12%;">
+    <col style="width: 12%;">
+  </colgroup>
+  <thead>
+    <tr>
+      <th>Model x Algorithm</th>
+      <th>Acceleration / support</th>
+      <th>Script</th>
+      <th>W&amp;B run</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Qwen-Image x FlowGRPO <strong>LoRA</strong></td>
+      <td><strong>request-level batching</strong></td>
+      <td><a href="https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/qwen_image/run_qwen_image_ocr_lora.sh">script</a></td>
+      <td><a href="https://wandb.ai/mikecheung/flow_grpo/runs/1vsrnhbd">w&amp;b run</a></td>
+    </tr>
+    <tr>
+      <td>Qwen-Image x FlowGRPO <strong>full model</strong></td>
+      <td>step-wise continuous batching</td>
+      <td><a href="https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/qwen_image/run_qwen_image_ocr.sh">script</a></td>
+      <td><a href="https://wandb.ai/andyzhou/VeRL-Omni-demo/runs/8p8y9olb">w&amp;b run</a></td>
+    </tr>
+    <tr>
+      <td>SD3.5 Medium x FlowGRPO LoRA, <strong>V1 trainer</strong></td>
+      <td><strong>request-level batching</strong>, sync mode</td>
+      <td><a href="https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/sd35/run_sd35_medium_ocr_lora_v1.sh">script</a></td>
+      <td><a href="https://wandb.ai/mikecheung/flow_grpo/runs/h04p15jr">w&amp;b run</a></td>
+    </tr>
+    <tr>
+      <td>SD3.5 Medium x FlowGRPO LoRA, <strong>V1 trainer</strong></td>
+      <td><strong>request-level batching</strong>, <code>separate_async</code></td>
+      <td><a href="https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/sd35/run_sd35_medium_ocr_lora_v1_separate_async.sh">script</a></td>
+      <td><a href="https://api.wandb.ai/links/didan/kk5uxbmh">w&amp;b run</a></td>
+    </tr>
+  </tbody>
+</table>
 
 A full diffusion post training support table in VeRL-Omni is available at
 [README.md](https://github.com/verl-project/verl-omni#model-and-algorithm-support-).
@@ -111,10 +144,7 @@ In the charts below, the blue curve is `v0.1` and the green curve is `v0.2`.
 
 The production-style Qwen-Image FlowGRPO recipes enable request-level batching by
 default. The main entry points are `run_qwen_image_ocr_lora.sh` for the
-baseline OCR reward setup, `run_qwen_image_ocr_lora_async_reward.sh` for async
-reward on a dedicated resource pool, and `run_qwen_image_ocr_lora_rollout_corr.sh`
-for rollout-correction bypass mode. The request-level rollout knobs are
-intentionally small and explicit:
+baseline OCR reward setup. The request-level rollout batching is enabled by default:
 
 ```bash
 actor_rollout_ref.rollout.step_execution=false
@@ -173,12 +203,54 @@ training to the target component, stripping unused modules such as Talker and
 codec-related components, and working with FSDP/FSDP2 wrapping. Current stable
 omni training support is organized around these recipes:
 
-| Model | Training mode | Algorithm / data | Script | Support | W&B run |
-|---|---|---|---|---|---|
-| Qwen3-Omni Thinker | text -> text | GSPO on GSM8K | [`run_qwen3_omni_thinker_gspo_lora_v1.sh`](https://github.com/verl-project/verl-omni/blob/main/examples/gspo_trainer/qwen3_omni/run_qwen3_omni_thinker_gspo_lora_v1.sh) | V1 trainer, reusable omni adapter, FSDP2, vLLM-Omni rollout | [gsm8k](https://wandb.ai/mikecheung/gspo/runs/j5mro1tn) |
-| Qwen3-Omni Thinker | image -> text | GSPO on MMK12 | [`run_qwen3_omni_thinker_gspo_lora_mmk12_v1.sh`](https://github.com/verl-project/verl-omni/blob/main/examples/gspo_trainer/qwen3_omni/run_qwen3_omni_thinker_gspo_lora_mmk12_v1.sh) | V1 trainer, multimodal data, actor-rollout consistency signals | [MMK12](https://wandb.ai/mikecheung/gspo/runs/2j8hxr36) |
-| Qwen3-Omni Thinker | text + image + audio -> text | GSPO on AVQA-R1-6K | [`run_qwen3_omni_thinker_gspo_npu_avqa_v1.sh`](https://github.com/verl-project/verl-omni/blob/main/examples/gspo_trainer/qwen3_omni/run_qwen3_omni_thinker_gspo_npu_avqa_v1.sh) | V1 trainer, NPU recipe, multimodal inputs | - |
-| Qwen3-Omni Thinker | offline multimodal preference | Omni DPO on Omni-Preference | [`run_qwen3_omni_omni_preference_lora.sh`](https://github.com/verl-project/verl-omni/blob/main/examples/dpo_trainer/qwen3_omni/qwen3_omni/run_qwen3_omni_omni_preference_lora.sh) | Offline MLLM DPO dataset, `OmniDPOLoss`, modality-grouped batches | [w&b report](https://api.wandb.ai/links/didan/iumxl2zr) |
+<table>
+  <colgroup>
+    <col style="width: 32%;">
+    <col style="width: 18%;">
+    <col style="width: 28%;">
+    <col style="width: 11%;">
+    <col style="width: 11%;">
+  </colgroup>
+  <thead>
+    <tr>
+      <th>Model x Algorithm</th>
+      <th>Modality / dataset</th>
+      <th>Support</th>
+      <th>Script</th>
+      <th>W&amp;B run</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Qwen3-Omni Thinker x GSPO</td>
+      <td>text -&gt; text / GSM8K</td>
+      <td><strong>V1 trainer</strong>, reusable omni adapter, FSDP2, vLLM-Omni rollout</td>
+      <td><a href="https://github.com/verl-project/verl-omni/blob/main/examples/gspo_trainer/qwen3_omni/run_qwen3_omni_thinker_gspo_lora_v1.sh">script</a></td>
+      <td><a href="https://wandb.ai/mikecheung/gspo/runs/j5mro1tn">w&amp;b run</a></td>
+    </tr>
+    <tr>
+      <td>Qwen3-Omni Thinker x GSPO</td>
+      <td>image -&gt; text / MMK12</td>
+      <td><strong>V1 trainer</strong>, multimodal data, actor-rollout consistency signals</td>
+      <td><a href="https://github.com/verl-project/verl-omni/blob/main/examples/gspo_trainer/qwen3_omni/run_qwen3_omni_thinker_gspo_lora_mmk12_v1.sh">script</a></td>
+      <td><a href="https://wandb.ai/mikecheung/gspo/runs/2j8hxr36">w&amp;b run</a></td>
+    </tr>
+    <tr>
+      <td>Qwen3-Omni Thinker x GSPO</td>
+      <td>text + image + audio -&gt; text / AVQA-R1-6K</td>
+      <td><strong>V1 trainer</strong>, NPU recipe, multimodal inputs</td>
+      <td><a href="https://github.com/verl-project/verl-omni/blob/main/examples/gspo_trainer/qwen3_omni/run_qwen3_omni_thinker_gspo_npu_avqa_v1.sh">script</a></td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <td>Qwen3-Omni Thinker x DPO</td>
+      <td>multimodal -&gt; preference / Omni-Preference</td>
+      <td><code>OmniDPOLoss</code>, modality-grouped batches</td>
+      <td><a href="https://github.com/verl-project/verl-omni/blob/main/examples/dpo_trainer/qwen3_omni/qwen3_omni/run_qwen3_omni_omni_preference_lora.sh">script</a></td>
+      <td><a href="https://api.wandb.ai/links/didan/iumxl2zr">w&amp;b report</a></td>
+    </tr>
+  </tbody>
+</table>
 
 A full omni post training support table in VeRL-Omni is available at
 [README.md](https://github.com/verl-project/verl-omni#model-and-algorithm-support-).
