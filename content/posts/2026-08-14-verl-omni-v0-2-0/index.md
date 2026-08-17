@@ -31,7 +31,7 @@ coverage, and documentation, with two changes carrying the most impact:
 - Stable omni training, built around the omni V1 trainer, reusable model
   adapters, FSDP2, and vLLM-Omni rollout.
 
-{{< figure src="verl_omni_v0_2_0_blog_overview.png" alt="VeRL-Omni v0.2.0 release overview" caption="VeRL-Omni v0.2.0 release overview" width="90%" >}}
+{{< figure src="verl_omni_v0_2_0_blog_overview.png" alt="VeRL-Omni v0.2.0 release overview" caption="VeRL-Omni v0.2.0 release overview" width="100%" >}}
 
 ## 1. Faster Diffusion RL
 
@@ -78,7 +78,7 @@ recipes:
 | Qwen-Image | FlowGRPO full model | [`run_qwen_image_ocr.sh`](https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/qwen_image/run_qwen_image_ocr.sh) | step-wise continuous batching, full-model training | [full model](https://wandb.ai/andyzhou/VeRL-Omni-demo/runs/8p8y9olb) |
 | SD3.5 Medium | FlowGRPO LoRA | [`run_sd35_medium_ocr_lora.sh`](https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/sd35/run_sd35_medium_ocr_lora.sh) | request-level batching | [v0 trainer](https://wandb.ai/mikecheung/flow_grpo/runs/9ylk6e5f) |
 | SD3.5 Medium | FlowGRPO LoRA, V1 trainer | [`run_sd35_medium_ocr_lora_v1.sh`](https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/sd35/run_sd35_medium_ocr_lora_v1.sh) | V1 trainer sync mode | [v1 trainer](https://wandb.ai/mikecheung/flow_grpo/runs/h04p15jr) |
-| SD3.5 Medium | FlowGRPO LoRA, V1 trainer | [`run_sd35_medium_ocr_lora_v1_separate_async.sh`](https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/sd35/run_sd35_medium_ocr_lora_v1_separate_async.sh) | V1 trainer `separate_async`, dedicated rollout workers | - |
+| SD3.5 Medium | FlowGRPO LoRA, V1 trainer | [`run_sd35_medium_ocr_lora_v1_separate_async.sh`](https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/sd35/run_sd35_medium_ocr_lora_v1_separate_async.sh) | V1 trainer `separate_async`, dedicated rollout workers | [v1 trainer](https://api.wandb.ai/links/didan/kk5uxbmh) |
 
 A full diffusion post training support table in VeRL-Omni is available at
 [README.md](https://github.com/verl-project/verl-omni#model-and-algorithm-support-).
@@ -132,7 +132,7 @@ async reward variant reaches about `360s` per step on 5 GPUs.
 SD3.5 FlowGRPO shows the trainer side of the same release. The repository
 includes `run_sd35_medium_ocr_lora_v1.sh` for the V1 trainer in sync mode and
 `run_sd35_medium_ocr_lora_v1_separate_async.sh` for V1 `separate_async`
-rollout. In the current benchmark, v0 and v1 are roughly tied on step time,
+rollout. In the current benchmark, v0 and v1 (sync mode) are roughly tied on step time,
 but the V1 run has a cleaner stability story as reward rises through training.
 Reference runs:
 [SD3.5 Medium OCR LoRA v0 trainer](https://wandb.ai/mikecheung/flow_grpo/runs/9ylk6e5f)
@@ -167,6 +167,20 @@ The other is the reusable omni model adapter layer. Instead of wiring each
 architecture as a one-off path, the trainer can rely on a shared interface for
 model setup, processor setup, trainable-stage selection, FSDP preparation, and
 rollout alignment.
+
+The repository-level call flow is roughly:
+
+{{< figure src="omni-ppo-adapter-flow.svg" alt="Omni PPO trainer and OmniModelBase adapter call flow" caption="Omni PPO trainer and OmniModelBase adapter call flow." >}}
+
+The module boundary is intentionally narrow. `main_omni.py` only decides that an
+online omni job should enter the verl PPO V1 path. The PPO trainer then owns the
+generic RL loop: rollout scheduling, advantage computation, and policy updates.
+When the actor model is built, the FSDP omni engine loads the Hugging Face model
+and asks `OmniModelBase` to resolve the adapter for the configured architecture
+and stage. That adapter is where model-specific work lives. For Qwen3-Omni
+thinker training, `Qwen3OmniThinkerAdapter` strips inactive modules, redirects
+`forward` to the thinker component, and prepares the processor and rollout
+alignment hooks before control returns to the PPO loop.
 
 ### Newly Support
 
