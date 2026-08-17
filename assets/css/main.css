@@ -417,15 +417,9 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 2.5rem 0; }
 
 .post-content table {
   width: 100%; margin: 2rem 0; border-collapse: collapse;
-  table-layout: fixed; font-size: .82rem; line-height: 1.45;
+  font-size: .93rem; display: block; overflow-x: auto;
 }
-.post-content th, .post-content td {
-  padding: .45rem .55rem;
-  border: 1px solid var(--border);
-  text-align: left;
-  vertical-align: top;
-  overflow-wrap: anywhere;
-}
+.post-content th, .post-content td { padding: .6rem .85rem; border: 1px solid var(--border); text-align: left; }
 .post-content th { background: var(--bg-subtle); font-weight: 600; }
 .post-content tbody tr:nth-child(even) { background: color-mix(in srgb, var(--bg-subtle) 55%, transparent); }
 

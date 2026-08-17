@@ -1,6 +1,6 @@
 ---
 title: "VeRL-Omni v0.2.0: Faster Diffusion RL and Stable Omni Training"
-date: 2026-08-14
+date: 2026-08-17
 authors:
   - "Yongxiang Huang"
   - "Didan Deng"
