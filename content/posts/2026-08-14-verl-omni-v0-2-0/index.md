@@ -87,13 +87,13 @@ recipes:
   </thead>
   <tbody>
     <tr>
-      <td>Qwen-Image x FlowGRPO <strong>LoRA</strong></td>
+      <td>Qwen-Image x FlowGRPO LoRA</td>
       <td><strong>request-level batching</strong></td>
       <td><a href="https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/qwen_image/run_qwen_image_ocr_lora.sh">script</a></td>
       <td><a href="https://wandb.ai/mikecheung/flow_grpo/runs/1vsrnhbd">w&amp;b run</a></td>
     </tr>
     <tr>
-      <td>Qwen-Image x FlowGRPO <strong>full model</strong></td>
+      <td>Qwen-Image x FlowGRPO full model</td>
       <td>step-wise continuous batching</td>
       <td><a href="https://github.com/verl-project/verl-omni/blob/main/examples/flowgrpo_trainer/qwen_image/run_qwen_image_ocr.sh">script</a></td>
       <td><a href="https://wandb.ai/andyzhou/VeRL-Omni-demo/runs/8p8y9olb">w&amp;b run</a></td>
