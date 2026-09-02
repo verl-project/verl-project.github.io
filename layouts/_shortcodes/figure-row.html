@@ -1,0 +1,11 @@
+{{- /* Responsive row of page-bundle images without image processing. */ -}}
+<figure class="fig">
+  <div class="fig-row">
+    {{- range slice (.Get "src1") (.Get "src2") (.Get "src3") -}}
+      {{- with $.Page.Resources.GetMatch . -}}
+        <img src="{{ .RelPermalink }}" alt="{{ $.Get "alt" }}" loading="lazy" decoding="async">
+      {{- end -}}
+    {{- end -}}
+  </div>
+  {{- with .Get "caption" }}<figcaption>{{ . | markdownify }}</figcaption>{{ end -}}
+</figure>

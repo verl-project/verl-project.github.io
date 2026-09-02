@@ -18,7 +18,7 @@
   {{- else -}}
     {{- $res := $page.Resources.GetMatch $src -}}
     {{- if $res -}}
-      {{- if eq $res.MediaType.SubType "svg" -}}
+      {{- if or (eq $res.MediaType.SubType "svg") (eq $res.MediaType.SubType "gif") -}}
         {{- $url = $res.RelPermalink -}}
       {{- else -}}
         {{- $url = ($res.Resize $spec).RelPermalink -}}

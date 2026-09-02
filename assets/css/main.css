@@ -410,9 +410,16 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 2.5rem 0; }
 
 .fig { margin: 2rem 0; text-align: center; }
 .fig img { border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg); }
+.fig-row { display: flex; gap: .75rem; align-items: flex-start; }
+.fig-row img { width: calc((100% - 1.5rem) / 3); height: auto; min-width: 0; }
 .fig figcaption {
   margin-top: .75rem; font-size: .88rem; color: var(--text-faint);
   line-height: 1.55; text-align: center;
+}
+
+@media (max-width: 720px) {
+  .fig-row { flex-wrap: wrap; }
+  .fig-row img { width: 100%; }
 }
 
 .post-content table {
