@@ -120,21 +120,21 @@ On the reasoning tasks, compared with sync training, Colocated Async reduces the
 
 ## Recipes and Experiments
 
-Finally, we turn to the factors that matter most for agentic RL in practice. Across our coding-agent training runs, two consistently stood out: data and reward. They form the foundation of RL: data shapes the tasks and trajectories the model learns from, while reward determines which behaviors are reinforced.
+Finally, we turn to the environments in which agents learn. Here, we use environment broadly to include the task distribution, execution context, and verifier that produces rewards. Across our coding-agent training runs, two aspects consistently stood out: task quality and reward reliability.
 
 ### Training Data
 
-Training data is a core determinant of whether agentic RL can learn effectively. We found that even carefully constructed datasets often contain specification issues: the problem statement may not match the reference solution or tests, required interface names may be omitted, objectives may be ambiguous, or hidden tests may enforce behavior beyond the stated requirements. Without sufficient and well-defined task context, an agent may fail for reasons unrelated to its capability, making the resulting training signal unreliable.
+Effective agentic RL requires tasks that are both valid and matched to the model's current capabilities. Even carefully constructed datasets can contain specification defects. Problem statements may conflict with reference solutions or tests, required interfaces may be omitted, objectives may be ambiguous, and hidden tests may enforce unstated requirements. Such defects can cause an agent to fail for reasons unrelated to its capabilities, producing misleading training signals.
 
-To address this issue, we combine offline filtering with online adaptation. We first run offline Best-of-N rollouts to estimate task difficulty and construct an initial training set. Since the model evolves during training, we then aggregate historical trial results to identify samples that are most informative for capability growth. Finally, dynamic sampling continuously updates the data distribution and removes samples with pass rates of 0 or 1, focusing training on tasks that remain learnable but nontrivial.
+Even valid tasks may provide little learning signal if they are too easy or too difficult. We first use offline Best-of-N rollouts to estimate task difficulty and construct an initial training set. Because the model evolves during training, we aggregate historical trial results to update these estimates and identify tasks associated with capability growth. Dynamic sampling then excludes tasks with recent pass rates of 0 or 1, focusing training on tasks that remain challenging but learnable.
 
 ### Verification and Reward Modeling
 
-Verification and reward modeling determine which behaviors RL reinforces. As models become more capable, they also become better at discovering unintended shortcuts to reward. For example, a coding agent may identify the upstream GitHub repository and search its commit history to recover the reference solution. A verifier based only on test results may assign full reward to this behavior, reinforcing repository leakage rather than genuine problem solving.
+Verification determines which behaviors RL reinforces. As models become more capable, they also become better at discovering unintended shortcuts. For example, a coding agent may locate the upstream GitHub repository and inspect its commit history to recover the reference solution. A verifier based only on test results may assign full reward to this behavior, reinforcing solution leakage rather than genuine problem solving.
 
-Preventing such behavior is not as simple as disabling network access. Coding agents often need network access to install dependencies, and some problem statements contain links to historical issues that provide essential task context. Blocking the network can therefore break valid workflows and introduce failures unrelated to the model’s capability. Verification and reward design must balance leakage prevention with the external access required to solve the task.
+Simply disabling network access is not a reliable solution. Coding agents often require network access to install dependencies, while some problem statements link to historical issues that provide essential context. Blocking access can therefore break valid workflows and introduce failures unrelated to model capability. Reward design must balance leakage prevention with the external access required to solve the task.
 
-Ultimately, we return to the same principle: effective RL depends on providing the agent with a well-defined, verifiable environment and sufficient task context.
+Effective agentic RL ultimately depends on environments that are well specified, appropriately challenging, and reliably verifiable, while still providing the context and tools required for legitimate solutions.
 
 ### Selected Experiments
 
@@ -167,3 +167,12 @@ We list three representative experiments as below:
        style="width:100%; height:auto;">
 </figure>
 
+## Future Work
+
+We believe agentic RL is not merely about eliciting knowledge already acquired through mid-training and SFT. Instead, it has the potential to enable models to reach a new level of capability. There is still a long way to go, and Uni-Agent will continue to evolve in three directions:
+
+1. **Broader ecosystem support.** We will expand Uni-Agent to support more modalities, a wider range of tasks, increasingly sophisticated agent harnesses, and a broader set of sandbox backends.
+2. **End-to-end system optimization.** We will continue improving the efficiency of rollout generation, policy training, and their coordination.
+3. **Deeper training research.** We will further investigate RL algorithms, training data, reward modeling, and practical recipes that drive robust and generalizable capability gains.
+
+Throughout this process, we will continue sharing our latest progress through technical insights and reproducible experiments. We invite researchers and developers from the LLM and agent communities to try Uni-Agent, share feedback, and contribute to its development. Together, we hope to advance agentic RL as an open and collaborative research direction.
