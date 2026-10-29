@@ -127,7 +127,7 @@ versions; the article specifies eight GPUs but does not identify their model.
 In the reported T2VA run, mean training reward climbs from roughly **0.27 to
 above 0.4** — a clear optimization of the selected reward signal.
 
-{{< figure src="minimax-h3-train-reward.png" alt="MiniMax H3 DiffusionNFT training reward" caption="Reported T2VA training reward. Source: the linked H3 case study." >}}
+{{< figure src="minimax-h3-train-reward.png" alt="MiniMax H3 DiffusionNFT training reward" caption="Reported T2VA training reward." >}}
 
 {{< note type="info" title="Reward, not the whole story" >}}
 The rising reward demonstrates optimization of the selected reward signal; it is
@@ -176,11 +176,9 @@ overlapping training window.
 
 {{< figure src="minicpmo-gspo-validation-reward.png" alt="MiniCPM-o 4.5 AVQA GSPO validation reward: separate-async vs. sync" caption="Validation reward vs. training step. These curves support comparable learning behavior over the shared window; they do not measure time to target quality." >}}
 
-**Execution efficiency.** A follow-up [crossover study](https://gist.github.com/zhtmike/a79de3667cd1ffc4ea6aedd8c21ad6f5)
-isolates the placement decision by forcing response length. On a single node of
-**4 × H800 80 GB**, using 24-step timing probes at constant learning rate and a
-**128 × 16** batch, it compares **colocated 4+0 (2×TP2)** against
-**separate-async 3+1 (1×TP1)** at three lengths:
+**Execution efficiency.** A follow-up experiment isolates the placement decision by forcing response length. On a single node of
+**4 × H800 80 GB**, at constant learning rate and a **128 × 16** batch, it compares **colocated 4+0 (2×TP2)** against
+**separate-async 3+1 (1×TP1)** at three generation tokens lengths:
 
 | Mean response length (tokens) | Colocated 4+0 (2×TP2) | Separate-async 3+1 (1×TP1) |
 |---|---:|---:|
@@ -195,12 +193,12 @@ intervals, n=20 per arm. Length tiers forced via `rollout.ignore_eos=True` +
 On short, natural answers the two placements are statistically tied.
 **Separate-async 3+1 overtakes colocated between 256 and 512 mean response
 tokens**, and the margin widens with generation share — 5.8% faster at 512
-tokens, 12.6% faster at 1024. The crossover is set by the generation share of
+tokens, 12.6% faster at 1024. The experiment is set by the generation share of
 the colocated step (≈0.45× the trainer chain on this recipe), not by GPU count:
 the 2+2 split never wins up to 1024 tokens, its deficit staying a constant ≈107 s
 at every tier.
 
-The practical guidance follows from that crossover. For trainer-bound workloads
+The practical guidance follows from that experiment. For trainer-bound workloads
 with short answers, colocated sync remains the right default; when responses
 grow long and the model admits TP1 rollout replicas, separate-async with a
 3+1-style split wins, and its advantage grows with length.
@@ -232,9 +230,6 @@ not counted as a new model.
 | Diffusion OPD | Asynchronous teacher scheduling and standalone teacher routing | [#427](https://github.com/verl-project/verl-omni/pull/427), [#495](https://github.com/verl-project/verl-omni/pull/495) |
 | Qwen-Image / Qwen-Image-Edit / Wan2.2 | Broader V1 sync recipe coverage for existing algorithms | [Release recipe list](https://github.com/verl-project/verl-omni/releases/tag/v0.3.0) |
 
-OmniNFT support in this release includes modality-wise advantage routing; the
-paper's layer-wise gradient surgery and region-wise loss reweighting are not
-included.
 
 Hardware coverage also grows: a unified Ascend Dockerfile covers A2, A3, and A5,
 and an AMD ROCm Dockerfile and installation guide are added. Availability
@@ -254,16 +249,9 @@ instructions. If you are reusing an older launcher, check these changes first:
   **3.11+**, Diffusers **0.40.0+**, and the release's CUDA **13.0+** stack. The
   earlier v0.3.0rc1 engine pin is unsupported. Ascend users should follow the
   updated pinned environment.
-- **Custom diffusion adapters:** adopt `DiffusionIOSpec` and named media outputs
-  (`media_artifact__<name>` and `metadata.media_artifacts`). Unlabelled
-  tensor/tuple results are rejected; decoded visual outputs use `uint8`.
 - **Qwen3-Omni launchers:** use `verl_omni.trainer.main_omni` and current
   recipes. The old `verl.trainer.main_ppo` launchers and legacy monkey-patches
-  have been removed. Megatron AudioMCQ/AVQA separate-async launchers remain
-  experimental and are not reproducible from the public pins.
-- **Attention and caching:** missing attention kernels now fail at startup
-  instead of silently falling back. Diffusion prefix caching requires the paged
-  scheduler and cannot be combined with sleep mode.
+  have been removed. 
 
 See the [complete migration details](https://github.com/verl-project/verl-omni/releases/tag/v0.3.0#breaking-changes),
 then try a recipe, compare quality and wall-clock behavior for your workload, and
