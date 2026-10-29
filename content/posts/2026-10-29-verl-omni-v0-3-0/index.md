@@ -127,7 +127,7 @@ versions; the article specifies eight GPUs but does not identify their model.
 In the reported T2VA run, mean training reward climbs from roughly **0.27 to
 above 0.4** — a clear optimization of the selected reward signal.
 
-{{< figure src="minimax-h3-train-reward.png" alt="MiniMax H3 DiffusionNFT training reward" caption="Reported T2VA training reward." >}}
+{{< figure src="minimax-h3-train-reward.svg" alt="MiniMax H3 DiffusionNFT training reward" caption="Reported T2VA training reward." >}}
 
 {{< note type="info" title="Reward, not the whole story" >}}
 The rising reward demonstrates optimization of the selected reward signal; it is
@@ -136,7 +136,7 @@ consistency. Component-level validation rewards and fixed-sample outputs below
 provide the complementary checks.
 {{< /note >}}
 
-{{< figure src="minimax-h3-eval-reward.png" alt="MiniMax H3 validation reward components" caption="Read CLAP, ImageBind, and combined validation rewards together, rather than treating the aggregate as a complete quality assessment." >}}
+{{< figure src="minimax-h3-eval-reward.svg" alt="MiniMax H3 validation reward components" caption="Read CLAP, ImageBind, and combined validation rewards together, rather than treating the aggregate as a complete quality assessment." >}}
 
 The case study compares base and trained outputs using the same prompts, seeds,
 and inference settings. One example uses the prompt: *"17th century sailing ship
@@ -172,9 +172,9 @@ separate-async vs. 0.762 for colocated sync**, and validation reward at step 10
 is **0.747 for both**. The attached curves show similar behavior over their
 overlapping training window.
 
-{{< figure src="minicpmo-gspo-training-score.png" alt="MiniCPM-o 4.5 AVQA GSPO training score: separate-async vs. sync" caption="Training mean score vs. training step. Teal: separate-async; orange: colocated sync. The sync run continues beyond the displayed async run." >}}
+{{< figure src="minicpmo-gspo-training-score.svg" alt="MiniCPM-o 4.5 AVQA GSPO training score: separate-async vs. sync" caption="Training mean score vs. training step. Teal: separate-async; orange: colocated sync. The sync run continues beyond the displayed async run." >}}
 
-{{< figure src="minicpmo-gspo-validation-reward.png" alt="MiniCPM-o 4.5 AVQA GSPO validation reward: separate-async vs. sync" caption="Validation reward vs. training step. These curves support comparable learning behavior over the shared window; they do not measure time to target quality." >}}
+{{< figure src="minicpmo-gspo-validation-reward.svg" alt="MiniCPM-o 4.5 AVQA GSPO validation reward: separate-async vs. sync" caption="Validation reward vs. training step. These curves support comparable learning behavior over the shared window; they do not measure time to target quality." >}}
 
 **Execution efficiency.** A follow-up experiment isolates the placement decision by forcing response length. On a single node of
 **4 × H800 80 GB**, at constant learning rate and a **128 × 16** batch, it compares **colocated 4+0 (2×TP2)** against
