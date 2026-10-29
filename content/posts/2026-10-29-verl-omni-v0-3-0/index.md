@@ -143,12 +143,22 @@ The case study compares base and trained outputs using the same prompts, seeds,
 and inference settings. One example uses the prompt: *"17th century sailing ship
 making a path through the waves during a storm."*
 
-| MiniMax H3 base | MiniMax H3 + DiffusionNFT |
-|---|---|
-| ![Base sailing-ship sample](minimax-h3-ship-base.gif) | ![DiffusionNFT sailing-ship sample](minimax-h3-ship-diffusionnft.gif) |
+<figure class="fig">
+  <video autoplay loop muted playsinline controls preload="metadata">
+    <source src="minimax-h3-ship-base.mp4" type="video/mp4">
+  </video>
+  <figcaption>MiniMax H3 base.</figcaption>
+</figure>
+
+<figure class="fig">
+  <video autoplay loop muted playsinline controls preload="metadata">
+    <source src="minimax-h3-ship-diffusionnft.mp4" type="video/mp4">
+  </video>
+  <figcaption>MiniMax H3 + DiffusionNFT.</figcaption>
+</figure>
 
 *Qualitative example reproduced from the reference article, not a comprehensive
-benchmark. GIF previews are silent and cannot demonstrate audio quality or
+benchmark. These previews are silent and cannot demonstrate audio quality or
 synchronization.*
 
 The integration also highlights why train-inference consistency needs explicit
