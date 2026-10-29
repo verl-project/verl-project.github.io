@@ -4,6 +4,7 @@ date: 2026-10-29
 authors:
   - "VeRL-Omni Team"
 summary: "VeRL-Omni v0.3.0 expands async RL, makes the V1 trainer the default, and adds reproducible recipes for audio-video generation and multimodal understanding."
+image: "cover.png"
 tags:
   - release
   - performance
