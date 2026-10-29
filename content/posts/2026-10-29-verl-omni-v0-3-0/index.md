@@ -183,13 +183,12 @@ overlapping training window.
 
 | Mean response length (tokens) | Colocated 4+0 (2×TP2) | Separate-async 3+1 (1×TP1) |
 |---|---:|---:|
-| ~101 (natural) | 194.8 s [187.4, 204.5] | 199.5 s [197.4, 201.6] · tie |
-| 512 (forced) | 259.7 s [256.3, 263.1] | 244.7 s [242.7, 247.0] · wins −5.8% |
-| 1024 (forced) | 360.1 s [356.9, 363.4] | 314.9 s [311.7, 317.9] · wins −12.6% |
+| ~101 (natural) | 194.8 s | 199.5 s · tie |
+| 512 (forced) | 259.7 s | 244.7 s · wins −5.8% |
+| 1024 (forced) | 360.1 s | 314.9 s · wins −12.6% |
 
-*Steady-state seconds per step over steps 3–22, with 95% bootstrap confidence
-intervals, n=20 per arm. Length tiers forced via `rollout.ignore_eos=True` +
-`max_response_length=N`.*
+*Steady-state seconds per step over steps 3–22, n=20 per arm. Length tiers
+forced via `rollout.ignore_eos=True` + `max_response_length=N`.*
 
 On short, natural answers the two placements are statistically tied.
 **Separate-async 3+1 overtakes colocated between 256 and 512 mean response
