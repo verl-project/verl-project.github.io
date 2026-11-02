@@ -82,9 +82,10 @@ after each training step.
 Training uses tensor parallelism (TP=1), pipeline parallelism (PP=4), and
 expert parallelism (EP=8), with one pipeline stage per node and eight
 expert-parallel ranks per stage. Rollout uses one vLLM engine per node with
-TP=8 and the Triton MoE backend. Training and rollout share the same GPUs:
-model parameters and optimizer states are offloaded to CPU memory during
-rollout generation, while vLLM's KV cache is released during training.
+TP=8 and the Triton MoE backend. Training and rollout share the same GPUs.
+The optimizer runs on the CPU with its states in host memory, model parameters
+are offloaded to CPU memory during rollout generation, and vLLM's KV cache is
+released during training.
 
 We use
 GRPO with a GSPO loss on DAPO-Math prompts and validate on AIME-2024. Each step
@@ -198,7 +199,7 @@ recipes because each step waits for its longest response.
 
 For an FP8 deployment target, BF16+QAT is a useful starting point when
 numerical agreement is the priority. It had less late-run KL drift than FP8,
-at a slightly higher cost per step in these runs. BF16 had the shortest steps
+at a higher cost per step in these runs. BF16 had the shortest steps
 and lowest mismatch, with a
 checkpoint about twice the size; converting its result to FP8 for deployment needs
 separate validation. These results describe the tested runs rather than a
@@ -214,11 +215,12 @@ branch used for the reported runs.
 
 | What | Where |
 | --- | --- |
-| verl | [verl-project/verl](https://github.com/verl-project/verl), main (merged [PR #8146](https://github.com/verl-project/verl/pull/8146)): the Megatron-Core memory fix, Dockerfile, and recipe |
+| verl | [verl-project/verl](https://github.com/verl-project/verl), main (merged [PR #8146](https://github.com/verl-project/verl/pull/8146)): the Dockerfile (which pins the Megatron-LM and Megatron-Bridge branches), the vLLM patches, and the recipe |
 | Megatron-LM | [PeterYang12/Megatron-LM](https://github.com/PeterYang12/Megatron-LM), branch `deepseek-v4-rocm-support` |
 | Megatron-Bridge | [PeterYang12/Megatron-Bridge](https://github.com/PeterYang12/Megatron-Bridge), branch `deepseek-v4-rocm-support` |
 | Image | `docker/rocm/Dockerfile.rocm.deepseek-v4` on verl main; use `VERL_REPO=https://github.com/verl-project/verl.git` and `VERL_BRANCH=main` when building |
-| Checkpoint | [PeterYang12/DeepSeek-V4-Flash-FP8-vllm](https://huggingface.co/PeterYang12/DeepSeek-V4-Flash-FP8-vllm) |
+| FP8 checkpoint (`qat`, `fp8`) | [PeterYang12/DeepSeek-V4-Flash-FP8-vllm](https://huggingface.co/PeterYang12/DeepSeek-V4-Flash-FP8-vllm) |
+| BF16 checkpoint (`TRAIN_MODE=bf16`) | [PeterYang12/DeepSeek-V4-Flash-bf16-vllm](https://huggingface.co/PeterYang12/DeepSeek-V4-Flash-bf16-vllm) |
 | Settings and reference values | the header of `examples/grpo_trainer/run_deepseek_v4_flash_megatron_rocm.sh` |
 
 ```bash
@@ -232,7 +234,9 @@ WK=<wandb key> TRAIN_MODE=qat bash examples/grpo_trainer/run_deepseek_v4_flash_m
 ```
 
 The reported FP8-rollout runs started near 0.002 for `rollout_corr/kl` and 0.01
-for `rollout_probs_diff_mean`.
+for `rollout_probs_diff_mean`. The recipe enables truncated importance sampling
+in every mode; the BF16 run reported here had it off, which corresponds to
+`ROLLOUT_IS=null`.
 
 ## Upstream support and next steps
 
@@ -277,10 +281,10 @@ Next, we plan to:
 - [VeOmni pull request 1089](https://github.com/ByteDance-Seed/VeOmni/pull/1089),
   DeepSeek-V4 QAT for NVIDIA. It uses power-of-two activation scales to match
   DeepGEMM, where we use float scales to match ROCm.
-- [DeepSeek-V4 technical report](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash),
-  DeepSeek-AI, April 2026. Sections 3.3 and 3.4 describe the batch-invariant
-  kernels and the quantization-aware training used in DeepSeek's own
-  post-training.
+- [DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence](https://arxiv.org/abs/2606.19348),
+  DeepSeek-AI, April 2026. Section 3.3 describes the batch-invariant and
+  deterministic kernels, and Section 5.2.1 the FP4 quantization-aware training
+  used in DeepSeek's own post-training.
 - [No More Train-Inference Mismatch: Bitwise Consistent On-Policy Reinforcement Learning with vLLM and TorchTitan](https://vllm.ai/blog/2025-11-10-bitwise-consistent-train-inference),
   vLLM and TorchTitan teams, November 2025. Bitwise-identical log-probabilities
   between rollout and training.
