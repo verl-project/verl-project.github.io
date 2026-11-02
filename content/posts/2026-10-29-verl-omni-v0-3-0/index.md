@@ -187,9 +187,12 @@ overlapping training window.
 
 {{< figure src="minicpmo-gspo-validation-reward.svg" alt="MiniCPM-o 4.5 AVQA GSPO validation reward: separate-async vs. sync" caption="Validation reward vs. training step. These curves support comparable learning behavior over the shared window; they do not measure time to target quality." >}}
 
-**Execution efficiency.** A follow-up experiment isolates the placement decision by forcing response length. On a single node of
-**4 × H800 80 GB**, at constant learning rate and a **128 × 16** batch, it compares **colocated 4+0 (2×TP2)** against
-**separate-async 3+1 (1×TP1)** at three generation tokens lengths:
+**Execution efficiency.** A follow-up experiment probes the placement decision
+by forcing response length. On a single node of **4 × H800 80 GB**, at constant
+learning rate, it compares **colocated 4+0 (2×TP2)** on the **128** batch
+size against **separate-async 3+1 (1×TP1)** on the documented **120 = 8 × 15**
+reshape — the two arms do not share a batch size, because with `rollout.n=16`
+no divisor of 128 is divisible by 3.
 
 | Mean response length (tokens) | Colocated 4+0 (2×TP2) | Separate-async 3+1 (1×TP1) |
 |---|---:|---:|
@@ -197,16 +200,14 @@ overlapping training window.
 | 512 (forced) | 259.7 s | 244.7 s · wins −5.8% |
 | 1024 (forced) | 360.1 s | 314.9 s · wins −12.6% |
 
-*Steady-state seconds per step over steps 3–22, n=20 per arm. Length tiers
-forced via `rollout.ignore_eos=True` + `max_response_length=N`.*
+*Steady-state seconds per step, each cell the mean over 20 consecutive steps
+(steps 3–22) of a single run — consecutive steps, not independent trials.
+Length tiers forced via `rollout.ignore_eos=True` + `max_response_length=N`.*
 
-On short, natural answers the two placements are statistically tied.
-**Separate-async 3+1 overtakes colocated between 256 and 512 mean response
-tokens**, and the margin widens with generation share — 5.8% faster at 512
-tokens, 12.6% faster at 1024. The experiment is set by the generation share of
-the colocated step (≈0.45× the trainer chain on this recipe), not by GPU count:
-the 2+2 split never wins up to 1024 tokens, its deficit staying a constant ≈107 s
-at every tier.
+On short, natural answers the two placements are effectively tied.
+**Separate-async 3+1 overtakes colocated somewhere between the ~101-token
+natural tier and the 512-token tier**, and the margin widens with generation
+share — 5.8% faster at 512 tokens, 12.6% faster at 1024.
 
 The practical guidance follows from that experiment. For trainer-bound workloads
 with short answers, colocated sync remains the right default; when responses
