@@ -255,13 +255,27 @@ instructions. If you are reusing an older launcher, check these changes first:
 - **Trainer:** V1 is the default (`trainer.use_v1=true`); legacy V0 is
   deprecated. Legacy entrypoints require explicit
   `trainer.use_v1=false`; use migrated recipes where available.
+- **Offline DPO stays on v0:** it keeps running on the v0 trainer
+  ([#650](https://github.com/verl-project/verl-omni/pull/650)), so it also
+  requires explicit `trainer.use_v1=false` — including the MiniCPM-o 4.5
+  offline-DPO recipe in the table above, not only unmigrated legacy scripts.
+- **Named diffusion media artifacts:** unlabelled diffusion rollout tensors are
+  now rejected ([#557](https://github.com/verl-project/verl-omni/pull/557)).
+  Custom rollout adapters and reward clients that read the old raw payload must
+  move to the named artifact contract (`media_artifact__<name>` and
+  `metadata.media_artifacts`).
+- **Attention backends fail closed:** a missing FlashAttention kernel errors at
+  startup instead of silently falling back to native/SDPA attention
+  ([#530](https://github.com/verl-project/verl-omni/pull/530)). Install the
+  missing kernel dependencies, or explicitly select a supported attention
+  backend.
 - **Dependencies:** use vLLM **0.30.0**, vLLM-Omni **`12e9280`**, Python
   **3.11+**, Diffusers **0.40.0+**, and the release's CUDA **13.0+** stack. The
   earlier v0.3.0rc1 engine pin is unsupported. Ascend users should follow the
   updated pinned environment.
 - **Qwen3-Omni launchers:** use `verl_omni.trainer.main_omni` and current
   recipes. The old `verl.trainer.main_ppo` launchers and legacy monkey-patches
-  have been removed. 
+  have been removed.
 
 See the [complete migration details](https://github.com/verl-project/verl-omni/releases/tag/v0.3.0#breaking-changes),
 then try a recipe, compare quality and wall-clock behavior for your workload, and
