@@ -94,7 +94,7 @@ DiffusionNFT — here we focus on the DiffusionNFT **T2VA** and **FL2VA** case
 study.
 
 **T2VA** generates audio-video from text. **FL2VA** adds first- and/or
-last-frame conditioning. Both use vLLM-Omni for rollout, Diffusers/FSDP2 for
+first-frame conditioning (`FRAME_INDICES='[0]'`). Both use vLLM-Omni for rollout, Diffusers/FSDP2 for
 actor training, and VeRL-Omni for orchestration, rewards, and policy
 synchronization. In FL2VA, conditional-frame latents stay fixed while the
 objective trains the generated content.
@@ -102,7 +102,7 @@ objective trains the generated content.
 DiffusionNFT applies reward-guided optimization through a forward-process
 training objective, avoiding the need to retain transition log-probabilities for
 every reverse denoising step. The case study scores with CLAP for text-audio
-alignment and ImageBind for audio-video correspondence.
+alignment and ImageBind reward (under CC-BY-NC-SA) for audio-video correspondence.
 
 The pipeline keeps two paths separate. The vLLM-Omni rollout engine generates
 audio-video from the prompt — plus fixed first- and last-frame latents for FL2VA
@@ -111,9 +111,10 @@ alignment, ImageBind for audio-video correspondence). In parallel, the clean
 latents and conditioning metadata flow to the Diffusers/FSDP2 actor for
 training.
 
-The reference article documents these recipe settings. They describe that case
-study's configuration rather than a performance comparison between release
-versions; the article specifies eight GPUs but does not identify their model.
+The T2VA example script set its defaults to `ROLLOUT_TP=2` and `ROLLOUT_N=16`. The FL2VA example script uses rollout `ROLLOUT_TP=4` and `ROLLOUT_N=16`. The table below reports
+the launcher defaults; they describe that case study's configuration rather
+than a performance comparison between release versions. Both DiffusionNFT
+launchers pass `trainer.use_v1=false`.
 
 | Setting | T2VA | FL2VA |
 |---|---|---|
@@ -125,15 +126,15 @@ versions; the article specifies eight GPUs but does not identify their model.
 | LoRA rank / alpha | 64 / 128 | 64 / 128 |
 | Reward | CLAP + ImageBind | CLAP + ImageBind |
 
-In the reported T2VA run, mean training reward climbs from roughly **0.27 to
-above 0.4** — a clear optimization of the selected reward signal.
+In the reported T2VA run, `critic/rewards/mean` starts near **0.27** and moves
+upward over roughly 60 steps, close to **0.4**.
 
 {{< figure src="minimax-h3-train-reward.svg" alt="MiniMax H3 DiffusionNFT training reward" caption="Reported T2VA training reward." >}}
 
 {{< note type="info" title="Reward, not the whole story" >}}
-The rising reward demonstrates optimization of the selected reward signal; it is
-not, by itself, evidence of a general improvement in visual quality or temporal
-consistency. Component-level validation rewards and fixed-sample outputs below
+The upward reward trend demonstrates optimization of the selected reward signal;
+it is not, by itself, evidence of a general improvement in visual quality or
+temporal consistency. Component-level validation rewards and fixed-sample outputs below
 provide the complementary checks.
 {{< /note >}}
 
