@@ -27,35 +27,33 @@ verl now runs DeepSeek-V4-Flash reinforcement learning on AMD Instinct™ MI355X
 GPUs. On four nodes (32 GPUs), GRPO training with Megatron-LM and rollout with
 vLLM ran 300 consecutive steps without restarts under each of three recipes
 (BF16 training with BF16 rollout, BF16 training with quantization-aware
-training and FP8 rollout, and FP8 training with FP8 rollout) from a single
+training (QAT) and FP8 rollout, and FP8 training with FP8 rollout) from a single
 Docker image on ROCm™ 7.2.3.
 Getting there took ROCm enablement work across Transformer Engine, Megatron-LM,
 Megatron-Bridge, and vLLM, plus aligning the training engine's quantization
 with the FP8 rollout so that the two engines agree on token probabilities. Both
 FP8-rollout recipes raised AIME-2024 accuracy from about 60% to about 76%.
 
-In reinforcement learning, vLLM generates responses and Megatron-LM learns from
-them. The two engines need to agree on the probabilities assigned to the
-generated tokens. We first explain the quantization changes that bring them
-closer together and compare the first training step. We then follow BF16,
-BF16+QAT, and FP8 through 300 steps, looking at validation accuracy, numerical
-agreement, and training cost.
+We first explain how training is aligned with the FP8 rollout and compare the
+first training step. We then follow BF16, BF16+QAT, and FP8 through 300 steps,
+looking at validation accuracy, numerical agreement, and training cost.
 
 ## Key takeaways
 
 - **Training must reproduce rollout quantization.** We matched FP8 rounding in
   the training computation, KV cache, indexer, and weight export. The two
   FP8-rollout recipes started around 0.0022–0.0023 for training–rollout KL in
-  the selected 300-step runs.
+  the reported 300-step runs.
 - **Three recipes completed 300 steps.** BF16 uses BF16 training and BF16
-  rollout. BF16+QAT uses BF16 training with quantization-aware training (QAT),
+  rollout. BF16+QAT uses BF16 training with QAT,
   which applies FP8 rounding in the forward pass, and an FP8 rollout. FP8 uses
   FP8 training and FP8 rollout. All three use FP8 KV-cache and indexer
   quantization.
 - **BF16+QAT is a useful starting point for an FP8 deployment target when
   numerical agreement matters most.** It had less late-run KL drift than FP8.
-  BF16 had the shortest logged steps and the lowest mismatch; the two
-  FP8-rollout recipes finished near 76% AIME-2024 accuracy.
+  The two FP8-rollout recipes finished near 76% AIME-2024 accuracy. BF16 was
+  the fastest per step and had the lowest mismatch; it peaked highest at 79.1%
+  but ended at 68.2%.
 - **The recipes share one Docker image and script.** Select them with
   `TRAIN_MODE=bf16`, `fp8`, or `qat`. The image includes the required training,
   weight-export, and rollout changes, and the reproduction instructions use the
@@ -71,30 +69,24 @@ after each training step.
 
 ![Figure 1. The BF16+QAT loop uses two engines for one policy. Probability agreement is measured on the tokens sampled by vLLM.](rl-loop.png)
 
-| Layer | What we used |
+| Component | Configuration |
 | --- | --- |
-| Hardware | 4 nodes, each with 8 AMD Instinct MI355X GPUs; ROCm 7.2.3, PyTorch 2.11 |
-| Training | Megatron-LM `fd1121b8f` plus the `deepseek-v4-rocm-support` commits; Transformer Engine 2.18 (ROCm build) |
-| Weight conversion | Megatron-Bridge 0.5.0 plus the power-of-two export fix |
-| Rollout | vLLM 0.26.0 (ROCm build) |
-| RL framework | verl, Megatron engine, one recipe script |
+| Cluster | 4 nodes × 8 AMD Instinct MI355X GPUs (32 GPUs), ROCm 7.2.3 |
+| Training | Megatron-LM with Transformer Engine; TP=1, PP=4, EP=8 (one pipeline stage per node, eight expert-parallel ranks per stage) |
+| Rollout | vLLM, one engine per node with TP=8 and the Triton MoE backend |
+| Weight sync | Megatron-Bridge converts the updated weights to the rollout format after each step |
+| Memory | Training and rollout share the GPUs; the optimizer runs on the CPU with its states in host memory, parameters are offloaded to CPU memory during rollout, and vLLM's KV cache is released during training |
+| Algorithm | GRPO with a GSPO loss and router replay |
+| Data | DAPO-Math prompts for training, AIME-2024 for validation |
+| Batch | 64 prompts × 8 samples per step, up to 8,192 response tokens |
+| Learning rate | 1e-6 |
+| Rollout correction | Token-level truncated importance sampling, capped at 2 (BF16+QAT and FP8 runs only) |
 
-Training uses tensor parallelism (TP=1), pipeline parallelism (PP=4), and
-expert parallelism (EP=8), with one pipeline stage per node and eight
-expert-parallel ranks per stage. Rollout uses one vLLM engine per node with
-TP=8 and the Triton MoE backend. Training and rollout share the same GPUs.
-The optimizer runs on the CPU with its states in host memory, model parameters
-are offloaded to CPU memory during rollout generation, and vLLM's KV cache is
-released during training.
-
-We use
-GRPO with a GSPO loss on DAPO-Math prompts and validate on AIME-2024. Each step
-samples 64 prompts eight times, with up to 8,192 response tokens, a learning
-rate of 1e-6, and router replay enabled. The BF16+QAT and FP8 runs also apply
-token-level truncated importance sampling: each token's loss is weighted by the
-ratio of its training to rollout probability, capped at 2, which corrects for
-the remaining mismatch between the two engines. The BF16 run did not use this
-correction. The recipe script contains the full configuration.
+Truncated importance sampling weights each token's loss by the ratio of its
+training to rollout probability, capped at 2, to correct for the remaining
+mismatch between the two engines. The recipe script contains the full
+configuration; software versions are listed in the
+[test-environment appendix](#appendix-test-environment).
 
 ## Matching training to FP8 rollout
 
@@ -104,14 +96,16 @@ mismatch biases the RL update, or, with our token-level correction, changes the
 weights applied to a response's tokens. Our goal is to make training
 reproduce the numerical behavior of FP8 rollout.
 
-Sharing weights is not enough because FP8 also rounds values during
-computation. In the tested ROCm setup, vLLM uses **floating-point activation
-scales**, while Transformer Engine defaults to power-of-two activation scales.
-**Weight scales follow a different rule**: the checkpoint stores them as powers
-of two. Training must reproduce both conventions.
+On ROCm, the two engines quantize FP8 activations differently by default:
+vLLM uses a **floating-point scale** for each 1×128 group (amax / 448), while
+Transformer Engine's blockwise recipe, on ROCm as well, rounds that scale up
+to a **power of two**, the same convention as DeepGEMM's UE8M0 scales on NVIDIA
+GPUs. Weight scales are powers of two on both sides,
+as stored in the checkpoint. In the RL loop, training must quantize the same
+way as rollout, so training uses floating-point scales for activations and
+power-of-two scales for weights.
 
-We therefore matched the rollout's weight and activation rounding in the
-training forward pass, including its KV-cache and indexer quantization. The
+Training also reproduces the rollout's KV-cache and indexer quantization. The
 indexer matters because DeepSeek-V4-Flash's sparse-attention layers use it to
 select a subset of compressed KV entries for each query, and FP8 rounding can
 change which entries it selects. Router replay makes training reuse the
@@ -149,17 +143,15 @@ At step 1, BF16+QAT and FP8 had mean absolute probability differences of
 0.00072, respectively. Different kernel arithmetic can still produce
 differences that FP8 rounding amplifies, so the two engines are not
 bit-identical. We next examine whether numerical agreement is maintained during
-300 training steps, and how task accuracy and training cost evolve.
+300 training steps, how task accuracy evolves, and what each recipe costs.
 
 ## Training results over 300 steps
 
 We next followed the three recipes through 300 training steps and evaluated
 AIME-2024 every 10 steps, sampling one response per record with temperature
 1.0 and top-p 0.7. Because validation is sampled rather than greedy, each
-evaluation carries sampling noise. The runs used the configuration described
-above, except that only the BF16+QAT and FP8 runs applied truncated importance
-sampling, and all logged seed 42. Each recipe has one long run in this
-comparison.
+evaluation carries sampling noise. All three runs used the configuration in
+the table above and seed 42, with one run per recipe.
 
 ![Figure 3. AIME-2024 validation accuracy at step 0 and every 10 steps through step 300. Points are the recorded evaluations, with one run per recipe and no confidence bands. The vertical axis starts at 45%.](aime-accuracy.png)
 
@@ -173,8 +165,7 @@ highest intermediate score and the final score can differ.
 BF16+QAT and FP8 improved more gradually. One possible explanation is that
 rounding changes how small weight updates affect the rollout model: some
 updates stay within an FP8 rounding interval, while others cross into a new
-value. These runs do not isolate that mechanism, so it remains a hypothesis to
-test with controlled comparisons and additional seeds.
+value.
 
 ![Figure 4. Training reward over 300 steps. Thin lines show the logged per-step mean reward (critic/rewards/mean); bold lines show means over consecutive, non-overlapping groups of 10 steps. Each recipe has one run with logged seed 42. Reward is measured on the training workload; held-out AIME accuracy is reported separately.](training-reward.png)
 
@@ -182,6 +173,14 @@ Mean training reward also increased in all three runs. Comparing the first and
 last 50 steps, it rose from 0.522 to 0.677 for BF16, 0.447 to 0.646 for
 BF16+QAT, and 0.444 to 0.630 for FP8 (Figure 4). These are averages over time
 within each run.
+
+Why did BF16 lose accuracy late in training? After about step 150, its
+training reward stayed roughly flat, but its policy entropy kept rising, from an
+average of 0.14 over steps 101–150 to 0.35 over steps 251–300: the model became
+less certain about which token to generate next. Entropy stayed flat or fell in
+the other two runs over the same steps. Validation samples at temperature 1.0,
+so a less certain model more often samples a wrong step and solves fewer AIME
+problems.
 
 ![Figure 5. Numerical agreement during training. Thin lines show the raw per-step values; bold lines show means over consecutive groups of 10 training steps. The two metrics use separate axes. The lower panel shows probability differences in percentage points: 0.01 probability units equals 1 percentage point. These are time averages within each run, not averages across seeds.](train-rollout-agreement.png)
 
@@ -199,11 +198,9 @@ recipes because each step waits for its longest response.
 
 For an FP8 deployment target, BF16+QAT is a useful starting point when
 numerical agreement is the priority. It had less late-run KL drift than FP8,
-at a higher cost per step in these runs. BF16 had the shortest steps
-and lowest mismatch, with a
-checkpoint about twice the size; converting its result to FP8 for deployment needs
-separate validation. These results describe the tested runs rather than a
-ranking that is established across seeds or workloads.
+at a higher cost per step in these runs. BF16 was the fastest per step and
+had the lowest mismatch, but its checkpoint is about twice the size; converting
+its result to FP8 for deployment needs separate validation.
 
 ## Reproduce
 
@@ -247,11 +244,13 @@ Dockerfile are now merged in
 
 Next, we plan to:
 
-- Upstream the remaining quantization-alignment changes.
+- Support [DeepSeek-V4.1-Flash](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash).
 - Optimize performance and kernels for low-precision training such as QAT and
   FP8, including FP8 weight synchronization and fake-quantization overhead.
-- Explore more training modes, such as fully asynchronous training and
-  bitwise-aligned training and rollout.
+- Use batch-invariant kernels in training and rollout, a step toward
+  bitwise-identical log-probabilities between the two engines.
+- Explore more training modes, such as fully asynchronous training.
+- Upstream the remaining quantization-alignment changes.
 
 ## Appendix: test environment
 
@@ -261,11 +260,11 @@ Next, we plan to:
 | Software | Linux 5.15, ROCm 7.2.3, RCCL 2.27.7, PyTorch 2.11.0, Triton 3.6.0, Ray 2.58.0; base image `vllm/vllm-openai-rocm:v0.26.0` |
 | Transformer Engine | 2.18.0.dev0 (ROCm build) |
 | Megatron-LM | `fd1121b8f` (megatron-core 0.19.0), branch `deepseek-v4-rocm-support` |
-| Megatron-Bridge | 0.5.0, branch `deepseek-v4-rocm-support` |
+| Megatron-Bridge | 0.5.0 plus the power-of-two export fix, branch `deepseek-v4-rocm-support` |
 | vLLM | 0.26.0 (ROCm build); AITER 0.1.16.post3 |
 | verl | Historical test revision: PeterYang12/verl, branch `dsv4-rocm`. Current reproduction instructions use verl-project/verl main after PR #8146. |
 | Data | DAPO-Math-17k training prompts. AIME-2024 validation at step 0 and every 10 steps, with 960 records in each evaluation, one sampled response per record (temperature 1.0, top-p 0.7). |
-| Reported numbers | Numerical-agreement metrics are from the recorded W&B runs. Early and late numerical-agreement averages use steps 1–50 and 251–300. Accuracy is `val-core/math_dapo/acc/mean@1`, recorded at step 0 and every 10 steps. |
+| Reported numbers | All metrics are from the recorded W&B runs. Early and late averages use steps 1–50 and 251–300 unless stated otherwise. Accuracy is `val-core/math_dapo/acc/mean@1`, recorded at step 0 and every 10 steps. |
 
 
 ## Related work
@@ -279,8 +278,9 @@ Next, we plan to:
   NVIDIA. DeepSeek-style block-scaled FP8 for generation and training, with
   importance sampling recommended to handle the training–inference mismatch.
 - [VeOmni pull request 1089](https://github.com/ByteDance-Seed/VeOmni/pull/1089),
-  DeepSeek-V4 QAT for NVIDIA. It uses power-of-two activation scales to match
-  DeepGEMM, where we use float scales to match ROCm.
+  DeepSeek-V4 QAT on NVIDIA GPUs. It uses power-of-two activation scales,
+  following DeepSeek-V4's E8M0 scale convention, where we use float scales to
+  match vLLM on ROCm.
 - [DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence](https://arxiv.org/abs/2606.19348),
   DeepSeek-AI, April 2026. Section 3.3 describes the batch-invariant and
   deterministic kernels, and Section 5.2.1 the FP4 quantization-aware training
