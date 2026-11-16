@@ -12,7 +12,7 @@ author_links:
   "Shuai Yuan": "https://github.com/crp0128"
   "RunPing Chen":  "https://github.com/ys2025-AI" 
 summary: "verl-SpeCo 0.1.0 adds native DSpark support and standalone draft model training, with reusable feature storage, seven algorithm backends, vLLM/SGLang integration, and GPU/Ascend NPU support."
-image: "verl-sepco.png"
+image: "cover.svg"
 tags:
   - DSpark
   - Dflash
